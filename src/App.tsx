@@ -73,7 +73,7 @@ function App() {
 
     try {
       const [
-        { data: showData, error: showError },
+        { data: showRows, error: showError },
         { data: bookingData, error: bookingError },
         { data: sensorData, error: sensorError },
       ] = await Promise.all([
@@ -81,17 +81,18 @@ function App() {
           .from('shows')
           .select('id, movie_id, show_date, show_time, hall_name, screen_name, movies!inner(title)')
           .eq('movies.title', movie.title)
-          .gte('show_date', getLocalDateString())
           .order('show_date', { ascending: true })
-          .order('show_time', { ascending: true })
-          .limit(1)
-          .maybeSingle(),
+          .order('show_time', { ascending: true }),
         supabase
           .from('bookings')
           .select('*, seats:seat_id(seat_number), show:show_id(show_date, show_time, hall_name, screen_name, movies(title))')
           .order('created_at', { ascending: true }),
         supabase.from('sensor_logs').select('*').order('created_at', { ascending: false }),
       ]);
+
+      const today = getLocalDateString();
+      const showData = showRows?.find((row: any) => row.show_date >= today)
+        ?? showRows?.[showRows.length - 1];
 
       if (!showError && showData) {
         setShow({

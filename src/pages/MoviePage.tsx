@@ -27,7 +27,7 @@ export default function MoviePage({ show, showLoading }: MoviePageProps) {
         <div className="mt-6 space-y-2 text-sm text-slate-200">
           <p><span className="text-slate-400">Theatre:</span> {show?.theatreName ?? '—'}</p>
           <p><span className="text-slate-400">Screen:</span> {show?.screenName ?? '—'}</p>
-          <p><span className="text-slate-400">Date:</span> {show?.showDate ?? (showLoading ? 'Loading…' : 'No upcoming show')}</p>
+          <p><span className="text-slate-400">Date:</span> {show?.showDate ?? (showLoading ? 'Loading…' : 'Show date unavailable')}</p>
           <p><span className="text-slate-400">Time:</span> {show?.showTime ?? '—'}</p>
         </div>
 

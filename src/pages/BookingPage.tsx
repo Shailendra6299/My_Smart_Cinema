@@ -34,8 +34,8 @@ export default function BookingPage({ onCreateBooking, show, showLoading }: Book
   if (!show) {
     return (
       <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-8 text-center">
-        <h1 className="text-3xl font-bold text-white">{showLoading ? 'Loading show schedule' : 'No upcoming show'}</h1>
-        <p className="mt-3 text-slate-300">{showLoading ? 'Please wait while we load the show details.' : 'Please check back when another show is scheduled.'}</p>
+        <h1 className="text-3xl font-bold text-white">{showLoading ? 'Loading show schedule' : 'Show details unavailable'}</h1>
+        <p className="mt-3 text-slate-300">{showLoading ? 'Please wait while we load the show details.' : 'The show record could not be loaded.'}</p>
         <button
           type="button"
           onClick={() => navigate('/movie')}

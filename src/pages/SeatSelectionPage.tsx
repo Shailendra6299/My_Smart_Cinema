@@ -27,7 +27,7 @@ export default function SeatSelectionPage({ bookings, show, showLoading }: SeatS
         <p className="text-xs uppercase tracking-[0.25em] text-amber-300">Seat Selection</p>
         <h1 className="mt-3 text-3xl font-bold text-white">Choose Your Seat</h1>
         <p className="mt-3 text-sm text-slate-300">
-          {show ? `Show date: ${show.showDate} · ${show.showTime}` : showLoading ? 'Loading show schedule…' : 'No upcoming show is scheduled.'}
+          {show ? `Show date: ${show.showDate} · ${show.showTime}` : showLoading ? 'Loading show schedule…' : 'Show schedule unavailable.'}
         </p>
       </div>
 
