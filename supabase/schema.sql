@@ -156,13 +156,19 @@ INSERT INTO shows (
 )
 SELECT
     id,
-    '2026-10-07',
+        CURRENT_DATE + 1,
     '19:30:00',
     'Smart Cinema Hall',
     'Screen 01',
     0.00
 FROM movies
 WHERE title = 'The Midnight Circuit'
+    AND NOT EXISTS (
+            SELECT 1
+            FROM shows
+            WHERE shows.movie_id = movies.id
+                AND shows.show_date >= CURRENT_DATE
+    )
 ON CONFLICT (movie_id, show_date, show_time) DO NOTHING;
 
 -- =========================================================

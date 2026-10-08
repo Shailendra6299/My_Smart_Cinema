@@ -10,9 +10,10 @@ import TicketPage from './pages/TicketPage';
 import ScanPage from './pages/ScanPage';
 import AdminPage from './pages/AdminPage';
 import AdminLoginPage from './pages/AdminLoginPage';
+import { movie } from './data/movie';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { createBookingCode, getSeatStatus, verifyBooking } from './services/booking';
-import type { ActivityEntry, Booking, SensorStatus } from './types';
+import type { ActivityEntry, Booking, SensorStatus, Show } from './types';
 
 const initialSensorState: Record<string, SensorStatus> = {
   R01: 'EMPTY',
@@ -30,6 +31,11 @@ const seatIdMap: Record<string, number> = {
 
 const formatClock = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+const getLocalDateString = () => {
+  const today = new Date();
+  return [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
+};
+
 function ProtectedRoute({ children, session }: { children: React.ReactNode; session: AuthSession | null }) {
   if (!isSupabaseConfigured || !supabase) {
     return <Navigate to="/admin-login" replace />;
@@ -44,6 +50,8 @@ function ProtectedRoute({ children, session }: { children: React.ReactNode; sess
 
 function App() {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [show, setShow] = useState<Show | null>(null);
+  const [showLoading, setShowLoading] = useState(true);
   const [sensorState, setSensorState] = useState<Record<string, SensorStatus>>(initialSensorState);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -64,23 +72,54 @@ function App() {
     }
 
     try {
-      const [{ data: bookingData, error: bookingError }, { data: sensorData, error: sensorError }] = await Promise.all([
-        supabase.from('bookings').select('*, seats:seat_id(seat_number)').order('created_at', { ascending: true }),
+      const [
+        { data: showData, error: showError },
+        { data: bookingData, error: bookingError },
+        { data: sensorData, error: sensorError },
+      ] = await Promise.all([
+        supabase
+          .from('shows')
+          .select('id, movie_id, show_date, show_time, hall_name, screen_name, movies!inner(title)')
+          .eq('movies.title', movie.title)
+          .gte('show_date', getLocalDateString())
+          .order('show_date', { ascending: true })
+          .order('show_time', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('bookings')
+          .select('*, seats:seat_id(seat_number), show:show_id(show_date, show_time, hall_name, screen_name, movies(title))')
+          .order('created_at', { ascending: true }),
         supabase.from('sensor_logs').select('*').order('created_at', { ascending: false }),
       ]);
+
+      if (!showError && showData) {
+        setShow({
+          id: Number(showData.id),
+          movieId: Number(showData.movie_id),
+          showDate: showData.show_date,
+          showTime: showData.show_time.slice(0, 5),
+          theatreName: showData.hall_name,
+          screenName: showData.screen_name,
+        });
+      } else {
+        setShow(null);
+      }
+      setShowLoading(false);
 
       if (!bookingError && bookingData) {
         const mappedBookings: Booking[] = bookingData.map((row: any) => ({
           id: row.booking_code ?? `BK${String(row.id).padStart(3, '0')}`,
+          showId: Number(row.show_id),
           customerName: row.customer_name ?? 'Guest',
           customerEmail: row.customer_email ?? 'guest@example.com',
           customerPhone: row.phone ?? '',
           seat: row.seats?.seat_number ?? row.seat ?? 'R01',
-          movieTitle: 'The Midnight Circuit',
-          showDate: '2026-10-07',
-          showTime: '19:30',
-          theatreName: 'Smart Cinema Hall',
-          screenName: 'Screen 01',
+          movieTitle: row.show?.movies?.title ?? movie.title,
+          showDate: row.show?.show_date ?? '',
+          showTime: row.show?.show_time?.slice(0, 5) ?? '',
+          theatreName: row.show?.hall_name ?? '',
+          screenName: row.show?.screen_name ?? '',
           qrScanned: Boolean(row.qr_scanned),
           qrScannedAt: row.qr_scanned_at ?? null,
         }));
@@ -109,6 +148,8 @@ function App() {
       }
     } catch {
       // Keep the existing local demo state if the database is unavailable.
+      setShow(null);
+      setShowLoading(false);
     }
   };
 
@@ -117,6 +158,7 @@ function App() {
 
     if (!client || !isSupabaseConfigured) {
       setAuthReady(true);
+      setShowLoading(false);
       return;
     }
 
@@ -139,9 +181,18 @@ function App() {
     });
 
     void loadSupabaseData();
+    let lastLoadedDate = getLocalDateString();
+    const showDateRefresh = window.setInterval(() => {
+      const currentDate = getLocalDateString();
+      if (currentDate !== lastLoadedDate) {
+        lastLoadedDate = currentDate;
+        void loadSupabaseData();
+      }
+    }, 60_000);
 
     return () => {
       isMounted = false;
+      window.clearInterval(showDateRefresh);
       authListener.subscription.unsubscribe();
     };
   }, []);
@@ -151,11 +202,13 @@ function App() {
     customerEmail,
     customerPhone,
     seat,
+    show: selectedShow,
   }: {
     customerName: string;
     customerEmail: string;
     customerPhone: string;
     seat: string;
+    show: Show;
   }) => {
     const isSeatTaken = bookings.some((booking) => booking.seat === seat);
 
@@ -165,15 +218,16 @@ function App() {
 
     const booking: Booking = {
       id: createBookingCode(bookings.length),
+      showId: selectedShow.id,
       customerName,
       customerEmail,
       customerPhone,
       seat,
       movieTitle: 'The Midnight Circuit',
-      showDate: '2026-10-07',
-      showTime: '19:30',
-      theatreName: 'Smart Cinema Hall',
-      screenName: 'Screen 01',
+      showDate: selectedShow.showDate,
+      showTime: selectedShow.showTime,
+      theatreName: selectedShow.theatreName,
+      screenName: selectedShow.screenName,
       qrScanned: false,
       qrScannedAt: null,
     };
@@ -187,8 +241,8 @@ function App() {
         customer_name: booking.customerName,
         customer_email: booking.customerEmail,
         phone: booking.customerPhone,
-        movie_id: 1,
-        show_id: 1,
+        movie_id: selectedShow.movieId,
+        show_id: selectedShow.id,
         seat_id: seatIdMap[booking.seat] ?? 1,
         qr_scanned: false,
         booking_status: 'BOOKED',
@@ -313,12 +367,12 @@ function App() {
     <Layout>
       <Routes>
         <Route path="/" element={<HomePage bookings={bookings} />} />
-        <Route path="/movie" element={<MoviePage />} />
-        <Route path="/seats" element={<SeatSelectionPage bookings={bookings} />} />
+        <Route path="/movie" element={<MoviePage show={show} showLoading={showLoading} />} />
+        <Route path="/seats" element={<SeatSelectionPage bookings={bookings} show={show} showLoading={showLoading} />} />
         <Route path="/admin-login" element={session ? <Navigate to="/admin" replace /> : <AdminLoginPage onLogin={handleLogin} />} />
         <Route
           path="/booking"
-          element={<BookingPage onCreateBooking={handleCreateBooking} />}
+          element={<BookingPage onCreateBooking={handleCreateBooking} show={show} showLoading={showLoading} />}
         />
         <Route path="/ticket/:bookingId" element={<TicketPage bookings={bookings} />} />
         <Route

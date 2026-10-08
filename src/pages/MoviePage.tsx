@@ -1,7 +1,13 @@
 import { Link } from 'react-router-dom';
 import { movie } from '../data/movie';
+import type { Show } from '../types';
 
-export default function MoviePage() {
+type MoviePageProps = {
+  show: Show | null;
+  showLoading: boolean;
+};
+
+export default function MoviePage({ show, showLoading }: MoviePageProps) {
   return (
     <section className="grid gap-8 rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-xl shadow-slate-950/30 md:grid-cols-[1fr_1.2fr] md:p-8">
       <img src={movie.posterUrl} alt={movie.title} className="h-full min-h-[420px] w-full rounded-2xl object-cover" />
@@ -19,19 +25,21 @@ export default function MoviePage() {
         <p className="mt-6 text-base leading-7 text-slate-300">{movie.description}</p>
 
         <div className="mt-6 space-y-2 text-sm text-slate-200">
-          <p><span className="text-slate-400">Theatre:</span> {movie.theatreName}</p>
-          <p><span className="text-slate-400">Screen:</span> {movie.screenName}</p>
-          <p><span className="text-slate-400">Date:</span> {movie.showDate}</p>
-          <p><span className="text-slate-400">Time:</span> {movie.showTime}</p>
+          <p><span className="text-slate-400">Theatre:</span> {show?.theatreName ?? '—'}</p>
+          <p><span className="text-slate-400">Screen:</span> {show?.screenName ?? '—'}</p>
+          <p><span className="text-slate-400">Date:</span> {show?.showDate ?? (showLoading ? 'Loading…' : 'No upcoming show')}</p>
+          <p><span className="text-slate-400">Time:</span> {show?.showTime ?? '—'}</p>
         </div>
 
         <div className="mt-8">
-          <Link
-            to="/seats"
-            className="inline-flex rounded-full bg-amber-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-amber-300"
-          >
-            Book Now
-          </Link>
+          {show ? (
+            <Link
+              to="/seats"
+              className="inline-flex rounded-full bg-amber-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-amber-300"
+            >
+              Book Now
+            </Link>
+          ) : null}
         </div>
       </div>
     </section>

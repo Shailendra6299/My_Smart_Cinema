@@ -5,10 +5,6 @@ export type MovieData = {
   genre: string;
   durationMinutes: number;
   rating: number;
-  showDate: string;
-  showTime: string;
-  theatreName: string;
-  screenName: string;
 };
 
 export const movie: MovieData = {
@@ -20,8 +16,4 @@ export const movie: MovieData = {
   genre: 'Sci‑Fi / Thriller',
   durationMinutes: 128,
   rating: 8.7,
-  showDate: '2026-10-07',
-  showTime: '19:30',
-  theatreName: 'Smart Cinema Hall',
-  screenName: 'Screen 01',
 };

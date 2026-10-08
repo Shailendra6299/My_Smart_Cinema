@@ -54,7 +54,7 @@ export default function TicketPage({ bookings }: TicketPageProps) {
         <div className="space-y-4 text-sm text-slate-200">
           <div>
             <p className="text-slate-400">Cinema</p>
-            <p className="text-lg font-semibold text-white">{movie.theatreName}</p>
+            <p className="text-lg font-semibold text-white">{booking.theatreName}</p>
           </div>
 
           <div>
@@ -78,11 +78,11 @@ export default function TicketPage({ bookings }: TicketPageProps) {
             </div>
             <div>
               <p className="text-slate-400">Date</p>
-              <p className="text-white">{booking.showDate}</p>
+              <p className="text-white">{booking.showDate || 'Show date unavailable'}</p>
             </div>
             <div>
               <p className="text-slate-400">Time</p>
-              <p className="text-white">{booking.showTime}</p>
+              <p className="text-white">{booking.showTime || 'Show time unavailable'}</p>
             </div>
           </div>
 

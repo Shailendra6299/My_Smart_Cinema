@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { movie } from '../data/movie';
-import type { Booking } from '../types';
+import type { Booking, Show } from '../types';
 
 type BookingPageProps = {
   onCreateBooking: (input: {
@@ -9,14 +9,17 @@ type BookingPageProps = {
     customerEmail: string;
     customerPhone: string;
     seat: string;
+    show: Show;
   }) => Booking;
+  show: Show | null;
+  showLoading: boolean;
 };
 
 type LocationState = {
   selectedSeat?: string;
 };
 
-export default function BookingPage({ onCreateBooking }: BookingPageProps) {
+export default function BookingPage({ onCreateBooking, show, showLoading }: BookingPageProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedSeat = (location.state as LocationState | null)?.selectedSeat;
@@ -27,6 +30,22 @@ export default function BookingPage({ onCreateBooking }: BookingPageProps) {
     customerPhone: '',
   });
   const [error, setError] = useState('');
+
+  if (!show) {
+    return (
+      <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-8 text-center">
+        <h1 className="text-3xl font-bold text-white">{showLoading ? 'Loading show schedule' : 'No upcoming show'}</h1>
+        <p className="mt-3 text-slate-300">{showLoading ? 'Please wait while we load the show details.' : 'Please check back when another show is scheduled.'}</p>
+        <button
+          type="button"
+          onClick={() => navigate('/movie')}
+          className="mt-6 rounded-full bg-amber-400 px-6 py-3 font-semibold text-slate-950"
+        >
+          Back to movie
+        </button>
+      </section>
+    );
+  }
 
   if (!selectedSeat) {
     return (
@@ -63,6 +82,7 @@ export default function BookingPage({ onCreateBooking }: BookingPageProps) {
         customerEmail: form.customerEmail.trim(),
         customerPhone: form.customerPhone.trim(),
         seat: selectedSeat,
+        show,
       });
 
       navigate(`/ticket/${booking.id}`);
@@ -137,19 +157,19 @@ export default function BookingPage({ onCreateBooking }: BookingPageProps) {
           </div>
           <div>
             <p className="text-slate-400">Date</p>
-            <p className="mt-1 text-white">{movie.showDate}</p>
+            <p className="mt-1 text-white">{show.showDate}</p>
           </div>
           <div>
             <p className="text-slate-400">Time</p>
-            <p className="mt-1 text-white">{movie.showTime}</p>
+            <p className="mt-1 text-white">{show.showTime}</p>
           </div>
           <div>
             <p className="text-slate-400">Theatre</p>
-            <p className="mt-1 text-white">{movie.theatreName}</p>
+            <p className="mt-1 text-white">{show.theatreName}</p>
           </div>
           <div>
             <p className="text-slate-400">Screen</p>
-            <p className="mt-1 text-white">{movie.screenName}</p>
+            <p className="mt-1 text-white">{show.screenName}</p>
           </div>
         </div>
       </aside>

@@ -1,18 +1,20 @@
 import { useNavigate } from 'react-router-dom';
 import { seatNumbers } from '../data/seats';
 import { getAvailableSeats } from '../services/booking';
-import type { Booking } from '../types';
+import type { Booking, Show } from '../types';
 
 type SeatSelectionPageProps = {
   bookings: Booking[];
+  show: Show | null;
+  showLoading: boolean;
 };
 
-export default function SeatSelectionPage({ bookings }: SeatSelectionPageProps) {
+export default function SeatSelectionPage({ bookings, show, showLoading }: SeatSelectionPageProps) {
   const navigate = useNavigate();
   const availableSeats = getAvailableSeats(bookings);
 
   const handleSeatSelection = (seat: (typeof seatNumbers)[number]) => {
-    if (!availableSeats.includes(seat)) {
+    if (!show || !availableSeats.includes(seat)) {
       return;
     }
 
@@ -24,6 +26,9 @@ export default function SeatSelectionPage({ bookings }: SeatSelectionPageProps) 
       <div className="mb-8 text-center">
         <p className="text-xs uppercase tracking-[0.25em] text-amber-300">Seat Selection</p>
         <h1 className="mt-3 text-3xl font-bold text-white">Choose Your Seat</h1>
+        <p className="mt-3 text-sm text-slate-300">
+          {show ? `Show date: ${show.showDate} · ${show.showTime}` : showLoading ? 'Loading show schedule…' : 'No upcoming show is scheduled.'}
+        </p>
       </div>
 
       <div className="mx-auto mb-8 w-full max-w-xl rounded-2xl border border-white/10 bg-slate-950/60 p-4">
@@ -39,7 +44,7 @@ export default function SeatSelectionPage({ bookings }: SeatSelectionPageProps) 
             <button
               key={seat}
               type="button"
-              disabled={!isAvailable}
+              disabled={!show || !isAvailable}
               onClick={() => handleSeatSelection(seat)}
               className={`rounded-2xl border p-5 text-left transition ${
                 isAvailable
@@ -49,7 +54,7 @@ export default function SeatSelectionPage({ bookings }: SeatSelectionPageProps) 
             >
               <div className="text-xs uppercase tracking-[0.18em] text-slate-300">Seat</div>
               <div className="mt-3 text-2xl font-bold">{seat}</div>
-              <div className="mt-2 text-sm">{isAvailable ? 'Available' : 'Booked'}</div>
+              <div className="mt-2 text-sm">{!show ? 'Unavailable' : isAvailable ? 'Available' : 'Booked'}</div>
             </button>
           );
         })}
